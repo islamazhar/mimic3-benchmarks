@@ -217,4 +217,10 @@ Use the following command for logistic regression. It will have L1 regularizatio
 - Refactor, where appropriate, to make code more generally useful
 - Expand coverage of variable map and variable range files.
 - Decide whether we are missing any other high-priority data (CPT codes, inputs, etc.)
+<!--
+Val_list.csv contents
+For decompensation  = (stay, period_length, y_true)
+in-hospital-mortality = (stay, y_true)
+length-of-stay = (stay, period_length, y_true)
 
+-->

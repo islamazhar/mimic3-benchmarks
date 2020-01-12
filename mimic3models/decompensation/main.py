@@ -17,7 +17,11 @@ from mimic3models import common_utils
 
 from keras.callbacks import ModelCheckpoint, CSVLogger
 
-
+# deep supervision
+# dropuout rate
+# Bidirectional_
+# BatchGenDeepSupervision
+# form the Discretizer header they cont_channels and those continued channels are going to be normalize..
 parser = argparse.ArgumentParser()
 common_utils.add_common_arguments(parser)
 parser.add_argument('--deep_supervision', dest='deep_supervision', action='store_true')
@@ -50,7 +54,8 @@ discretizer = Discretizer(timestep=args.timestep,
                           store_masks=True,
                           impute_strategy='previous',
                           start_time='zero')
-
+# Mazhar: discretizer_header is used in args and also to set cont_channels --> normalizer...
+# Mazhar: if normalizer is None then use the previosuly save file?
 if args.deep_supervision:
     discretizer_header = discretizer.transform(train_data_loader._data["X"][0])[1].split(',')
 else:
@@ -62,17 +67,18 @@ normalizer_state = args.normalizer_state
 if normalizer_state is None:
     normalizer_state = 'decomp_ts{}.input_str:previous.n1e5.start_time:zero.normalizer'.format(args.timestep)
     normalizer_state = os.path.join(os.path.dirname(__file__), normalizer_state)
-normalizer.load_params(normalizer_state)
+normalizer.load_params(normalizer_state) # where the normalizer is used?
 
-args_dict = dict(args._get_kwargs())
-args_dict['header'] = discretizer_header
+args_dict = dict(args._get_kwargs()) # Mazhar: getting all the command line arguments...
+args_dict['header'] = discretizer_header # Mazhar:  `discretizer_header` is taken from train_data_loader (if deep supervision is on) otherwise from train_reader.
 args_dict['task'] = 'decomp'
 
 
 # Build the model
 print("==> using model {}".format(args.network))
-model_module = imp.load_source(os.path.basename(args.network), args.network)
+model_module = imp.load_source(os.path.basename(args.network), args.network) # loading the args.network module dynamically...what is the value of args.network?
 model = model_module.Network(**args_dict)
+# dim, batch_norm, dropout, rec_dropout, task, target_repl=False, deep_supervision=False, num_classes=1, depth=1, input_dim=76, **kwargs
 suffix = "{}.bs{}{}{}.ts{}".format("" if not args.deep_supervision else ".dsup",
                                    args.batch_size,
                                    ".L1{}".format(args.l1) if args.l1 > 0 else "",
@@ -80,24 +86,25 @@ suffix = "{}.bs{}{}{}.ts{}".format("" if not args.deep_supervision else ".dsup",
                                    args.timestep)
 model.final_name = args.prefix + model.say_name() + suffix
 print("==> model.final_name:", model.final_name)
-
+#> model.final_name: k_lstm.n128.dep1.bs8.ts1.0
 
 # Compile the model
 print("==> compiling the model")
 optimizer_config = {'class_name': args.optimizer,
                     'config': {'lr': args.lr,
                                'beta_1': args.beta_1}}
+# Adam is an adaptive learning rate (optimizer...)
 
 # NOTE: one can use binary_crossentropy even for (B, T, C) shape.
 #       It will calculate binary_crossentropies for each class
 #       and then take the mean over axis=-1. Tre results is (B, T).
 model.compile(optimizer=optimizer_config,
-              loss='binary_crossentropy')
+              loss='binary_crossentropy') # standard lstm code
 model.summary()
-
+#namespace(batch_norm=False, batch_size=8, beta_1=0.9, data='/home/danfeng/project/mimic3-benchmarks/mimic3models/decompensation/../../data/decompensation/', deep_supervision=False, depth=1, dim=128, dropout=0.0, epochs=100, imputation='previous', l1=0, l2=0, load_state='', lr=0.001, mode='train', network='mimic3models/keras_models/lstm.py', normalizer_state=None, optimizer='adam', output_dir='mimic3models/decompensation', prefix='', rec_dropout=0.0, save_every=1, size_coef=4.0, small_part=False, timestep=1.0, verbose=2)
 # Load model weights
-n_trained_chunks = 0
-if args.load_state != "":
+n_trained_chunks = 0 # what?
+if args.load_state != "": # what is load_state?
     model.load_weights(args.load_state)
     n_trained_chunks = int(re.match(".*chunk([0-9]+).*", args.load_state).group(1))
 
@@ -149,7 +156,7 @@ if args.mode == 'train':
                         epochs=n_trained_chunks + args.epochs,
                         initial_epoch=n_trained_chunks,
                         callbacks=[metrics_callback, saver, csv_logger],
-                        verbose=args.verbose)
+                        verbose=args.verbose) # the actual params... # https://www.geeksforgeeks.org/keras-fit-and-keras-fit_generator/
 
 elif args.mode == 'test':
 
@@ -188,7 +195,7 @@ elif args.mode == 'test':
                     predictions.append(p)
                     names.append(name)
         print('\n')
-    else:
+    else: # what if small_part is On now??
         del train_reader
         del val_reader
         test_reader = DecompensationReader(dataset_dir=os.path.join(args.data, 'test'),
@@ -206,7 +213,7 @@ elif args.mode == 'test':
             cur_ts = ret["ts"]
 
             x = np.array(x)
-            pred = model.predict_on_batch(x)[:, 0]
+            pred = model.predict_on_batch(x)[:, 0] # when deep supervision is ON it is model.predict(x, batch_size=args.batch_size)
             predictions += list(pred)
             labels += list(y)
             names += list(cur_names)
