@@ -6,6 +6,7 @@ import argparse
 import os
 import imp
 import re
+import copy
 
 from mimic3models.decompensation import utils
 from mimic3benchmark.readers import DecompensationReader
@@ -125,6 +126,20 @@ else:
                                     normalizer, args.batch_size, train_nbatches, True)
     val_data_gen = utils.BatchGen(val_reader, discretizer,
                                   normalizer, args.batch_size, val_nbatches, False)
+# print(type(train_data_gen))
+
+train_data_gen_tmp = copy.deepcopy(train_data_gen)
+print("Printing Training data")
+class1 = 0
+class0 = 0
+for i in range(train_data_gen_tmp.steps):
+    ret = next(train_data_gen_tmp)
+    #print(ret[1]) # [0 0 0 0 0 0 0 0]
+    #print(ret[0])  # [ [] [] [] [] [] [] [] [] ]
+    for c in ret[1]:
+        if c == 0: class0+=1
+        else: class1+=1
+print("Class 1 = ", class1, "Class 0 = ", class0)
 
 if args.mode == 'train':
 
@@ -180,7 +195,7 @@ elif args.mode == 'test':
                                                       shuffle=False, return_names=True)
 
         for i in range(test_data_gen.steps):
-            print("\tdone {}/{}".format(i, test_data_gen.steps), end='\r')
+            print("\tdone {}/{}".format(i, test_data_gen.steps), end='\r') # Done? should it be predicting?
             ret = next(test_data_gen)
             (x, y) = ret["data"]
             cur_names = np.array(ret["names"]).repeat(x[0].shape[1], axis=-1)
