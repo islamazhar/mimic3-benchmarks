@@ -123,24 +123,22 @@ else:
         train_nbatches = 40
         val_nbatches = 40
     train_data_gen = utils.BatchGen(train_reader, discretizer,
-                                    normalizer, args.batch_size, train_nbatches, True)
+                                    normalizer, args.batch_size, train_nbatches, True, 1, 1)
     val_data_gen = utils.BatchGen(val_reader, discretizer,
                                   normalizer, args.batch_size, val_nbatches, False)
 # print(type(train_data_gen))
 
-train_data_gen_tmp = copy.deepcopy(train_data_gen)
-print("Printing Training data")
 class1 = 0
 class0 = 0
-for i in range(train_data_gen_tmp.steps):
-    ret = next(train_data_gen_tmp)
-    #print(ret[1]) # [0 0 0 0 0 0 0 0]
-    #print(ret[0])  # [ [] [] [] [] [] [] [] [] ]
+for i in range(train_data_gen.steps):
+    ret = next(train_data_gen)
     for c in ret[1]:
         if c == 0: class0+=1
         else: class1+=1
 print("Class 1 = ", class1, "Class 0 = ", class0)
 
+train_data_gen = utils.BatchGen(train_reader, discretizer,
+                                    normalizer, args.batch_size, train_nbatches, True, 1/class1, 1/class0)
 if args.mode == 'train':
 
     # Prepare training
