@@ -128,17 +128,19 @@ else:
                                   normalizer, args.batch_size, val_nbatches, False)
 # print(type(train_data_gen))
 
-class1 = 0
-class0 = 0
+class_1 = 0
+class_0 = 0
 for i in range(train_data_gen.steps):
     ret = next(train_data_gen)
     for c in ret[1]:
-        if c == 0: class0+=1
-        else: class1+=1
-print("Class 1 = ", class1, "Class 0 = ", class0)
+        if c == 0: class_0 += 1
+        else: class_1 += 1
+print("Number of class 1 instances= ", class_1, "Number of class 0 instances= ", class_0)
+# calculating frequency
+# class 0 =  6.382435537401073e-05 | class 1  =  0.0029940119760479044
+train_reader = DecompensationReader(dataset_dir=os.path.join(args.data, 'train'),listfile=os.path.join(args.data, 'train_listfile.csv'))
+train_data_gen = utils.BatchGen(train_reader, discretizer, normalizer, args.batch_size, train_nbatches, True, 1/class_1, 1/class_0)
 
-train_data_gen = utils.BatchGen(train_reader, discretizer,
-                                    normalizer, args.batch_size, train_nbatches, True, 1/class1, 1/class0)
 if args.mode == 'train':
 
     # Prepare training
@@ -213,10 +215,13 @@ elif args.mode == 'test':
         del val_reader
         test_reader = DecompensationReader(dataset_dir=os.path.join(args.data, 'test'),
                                            listfile=os.path.join(args.data, 'test_listfile.csv'))
+        if args.small_part:
+            test_nbatches = 40
+            #val_nbatches = 40
 
         test_data_gen = utils.BatchGen(test_reader, discretizer,
-                                       normalizer, args.batch_size,
-                                       None, shuffle=False, return_names=True)  # put steps = None for a full test
+                                       normalizer, args.batch_size, test_nbatches
+                                       ,shuffle=False, return_names=True)  # put steps = None for a full test
 
         for i in range(test_data_gen.steps):
             print("predicting {} / {}".format(i, test_data_gen.steps), end='\r')
