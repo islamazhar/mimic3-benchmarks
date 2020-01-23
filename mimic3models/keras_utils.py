@@ -35,7 +35,7 @@ class DecompensationMetrics(keras.callbacks.Callback):
         for i in range(data_gen.steps):
             if self.verbose == 1:
                 print("\tdone {}/{}".format(i, data_gen.steps), end='\r')
-            (x, y) = next(data_gen)
+            (x, y, z) = next(data_gen)
             pred = self.model.predict(x, batch_size=self.batch_size)
             if self.deep_supervision:
                 for m, t, p in zip(x[1].flatten(), y.flatten(), pred.flatten()):

@@ -29,8 +29,8 @@ parser.set_defaults(deep_supervision=False)
 args = parser.parse_args()
 print(args)
 
-if args.small_part:
-    args.save_every = 2**30
+#if args.small_part:
+#    args.save_every = 2**30
 
 # Build readers, discretizers, normalizers
 if args.deep_supervision:
@@ -115,10 +115,32 @@ else:
         train_nbatches = 40
         val_nbatches = 40
     train_data_gen = utils.BatchGen(train_reader, discretizer,
-                                    normalizer, args.batch_size, train_nbatches, True)
+                                    normalizer, args.batch_size, train_nbatches, False, False, 1, 1)
     val_data_gen = utils.BatchGen(val_reader, discretizer,
-                                  normalizer, args.batch_size, val_nbatches, False)
+                                  normalizer, args.batch_size, val_nbatches, False, False, 1, 1)
+#"""
+class_0 = 0.0
+class_1 = 0.0
+print("calculating frequency")
+for i in range(train_data_gen.steps):
+	ret = next(train_data_gen)
+	#print(ret)
+	for c in ret[1]:
+		if c == 0: class_0 += 1
+		else: class_1 += 1
 
+c0 = class_1/(class_0+class_1)
+c1 = class_0/(class_1+class_0)
+#c0 = 0.015
+#c1 = 1
+
+print("class 0 ", class_0, "class 1 ", class_1, "c0", c0, "c1", c1)
+
+train_reader = DecompensationReader(dataset_dir=os.path.join(args.data, 'train'),listfile=os.path.join(args.data, 'train_listfile.csv'))
+train_data_gen = utils.BatchGen(train_reader, discretizer, normalizer, args.batch_size, train_nbatches, False, False, c0, c1)
+val_data_gen = utils.BatchGen(val_reader, discretizer,  normalizer, args.batch_size, train_nbatches, False, False, c0, c1)
+
+#"""                                    
 if args.mode == 'train':
 
     # Prepare training
@@ -193,15 +215,16 @@ elif args.mode == 'test':
         del val_reader
         test_reader = DecompensationReader(dataset_dir=os.path.join(args.data, 'test'),
                                            listfile=os.path.join(args.data, 'test_listfile.csv'))
-
+        test_nbatches = None
+        if args.small_part: test_nbatches = 1024
         test_data_gen = utils.BatchGen(test_reader, discretizer,
                                        normalizer, args.batch_size,
-                                       None, shuffle=False, return_names=True)  # put steps = None for a full test
+                                       test_nbatches, shuffle=False, return_names=True)  # put steps = None for a full test
 
         for i in range(test_data_gen.steps):
             print("predicting {} / {}".format(i, test_data_gen.steps), end='\r')
             ret = next(test_data_gen)
-            x, y = ret["data"]
+            x, y, z = ret["data"]
             cur_names = ret["names"]
             cur_ts = ret["ts"]
 
