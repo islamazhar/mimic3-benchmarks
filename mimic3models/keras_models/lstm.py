@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
-from keras.models import Model
+from keras.models import Model #https://keras.io/models/model/
 from keras.layers import Input, Dense, LSTM, Masking, Dropout
 from keras.layers.wrappers import Bidirectional, TimeDistributed
 from mimic3models.keras_utils import LastTimestep
@@ -37,11 +37,11 @@ class Network(Model):
         inputs = [X]
         mX = Masking()(X)
 
-        if deep_supervision:
+        if deep_supervision: # if deep_supervision is ON append M with X
             M = Input(shape=(None,), name='M')
             inputs.append(M)
 
-        # Configurations
+        # Configurations can be two types bidirectional or deep_supervision?
         is_bidirectional = True
         if deep_supervision:
             is_bidirectional = False
